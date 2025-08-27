@@ -1,77 +1,99 @@
-import type {
-	IExecuteFunctions,
-	INodeExecutionData,
-	INodeType,
-	INodeTypeDescription,
-} from 'n8n-workflow';
-import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
-
-export class ExampleNode implements INodeType {
+import { INodeType, INodeTypeDescription, IExecuteFunctions } from 'n8n-workflow';
+import { execFile, execSync } from 'child_process';
+import { readFileSync, writeFileSync } from 'fs';
+import * as tmp from 'tmp';
+import ffmpegStatic from 'ffmpeg-static';
+import { NodeConnectionType } from 'n8n-workflow';
+export class VideoEditorStatic implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Example Node',
-		name: 'exampleNode',
+		displayName: 'Video Editor (ffmpeg-static)',
+		name: 'videoEditorStatic',
+		icon: 'file:video.svg',
 		group: ['transform'],
 		version: 1,
-		description: 'Basic Example Node',
+		description: 'Edit video files using ffmpeg (static or global)',
 		defaults: {
-			name: 'Example Node',
+			name: 'Video Editor',
+			color: '#1F72E5',
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
-		usableAsTool: true,
 		properties: [
-			// Node properties which the user gets displayed and
-			// can change on the node.
 			{
-				displayName: 'My String',
-				name: 'myString',
-				type: 'string',
-				default: '',
-				placeholder: 'Placeholder value',
-				description: 'The description text',
+				displayName: 'Start Time (seconds)',
+				name: 'startTime',
+				type: 'number',
+				default: 0,
+				description: 'Start time to cut video',
+			},
+			{
+				displayName: 'Duration (seconds)',
+				name: 'duration',
+				type: 'number',
+				default: 10,
+				description: 'Duration of output video',
 			},
 		],
 	};
 
-	// The function below is responsible for actually doing whatever this node
-	// is supposed to do. In this case, we're just appending the `myString` property
-	// with whatever the user has entered.
-	// You can make async calls and use `await`.
-	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+	async execute(this: IExecuteFunctions) {
 		const items = this.getInputData();
+		const returnData = [];
 
-		let item: INodeExecutionData;
-		let myString: string;
-
-		// Iterates over all input items and add the key "myString" with the
-		// value the parameter "myString" resolves to.
-		// (This could be a different value for each item in case it contains an expression)
-		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-			try {
-				myString = this.getNodeParameter('myString', itemIndex, '') as string;
-				item = items[itemIndex];
-
-				item.json.myString = myString;
-			} catch (error) {
-				// This node should never fail but we want to showcase how
-				// to handle errors.
-				if (this.continueOnFail()) {
-					items.push({ json: this.getInputData(itemIndex)[0].json, error, pairedItem: itemIndex });
-				} else {
-					// Adding `itemIndex` allows other workflows to handle this error
-					if (error.context) {
-						// If the error thrown already contains the context property,
-						// only append the itemIndex
-						error.context.itemIndex = itemIndex;
-						throw error;
-					}
-					throw new NodeOperationError(this.getNode(), error, {
-						itemIndex,
-					});
-				}
-			}
+		let ffmpegPath: string;
+		try {
+			execSync('ffmpeg -version');
+			ffmpegPath = 'ffmpeg'; 
+		} catch {
+			ffmpegPath = ffmpegStatic as string; 
 		}
 
-		return [items];
+		for (let i = 0; i < items.length; i++) {
+			const binaryData = items[i].binary?.data;
+			if (!binaryData) continue;
+
+			const tmpInput = tmp.fileSync({ postfix: '.mp4' });
+			const tmpOutput = tmp.fileSync({ postfix: '.mp4' });
+			writeFileSync(tmpInput.name, binaryData.data);
+
+			const startTime = this.getNodeParameter('startTime', i) as number;
+			const duration = this.getNodeParameter('duration', i) as number;
+
+			await new Promise<void>((resolve, reject) => {
+				execFile(
+					ffmpegPath,
+					[
+						'-ss',
+						startTime.toString(),
+						'-t',
+						duration.toString(),
+						'-i',
+						tmpInput.name,
+						'-c',
+						'copy',
+						tmpOutput.name,
+					],
+					(err) => {
+						if (err) reject(err);
+						else resolve();
+					},
+				);
+			});
+
+			const editedVideo = readFileSync(tmpOutput.name);
+
+			returnData.push({
+				json: {},
+				binary: {
+					data: {
+						data: editedVideo,
+						fileName: 'edited.mp4',
+						mimeType: 'video/mp4',
+					},
+				},
+			});
+		}
+
+		return this.prepareOutputData(returnData);
 	}
 }
