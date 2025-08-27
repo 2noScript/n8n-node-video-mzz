@@ -1,4 +1,5 @@
-import { execFile, execSync, spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
+import { Writable } from 'stream';
 import ffmpegStatic from 'ffmpeg-static';
 
 class FfmpegHandler {
@@ -6,176 +7,144 @@ class FfmpegHandler {
 
 	constructor() {
 		try {
-			execSync('ffmpeg -version');
+			execSync('ffmpeg -version', { stdio: 'ignore' });
 			this.ffmpegPath = 'ffmpeg';
+			console.log('Using system FFmpeg');
 		} catch {
-			this.ffmpegPath = ffmpegStatic as string;
+			this.ffmpegPath = ffmpegStatic!;
+			console.log('Using bundled FFmpeg');
 		}
 	}
 
-	private async _run(input: Buffer, args: string[]): Promise<Buffer> {
+	private async _run(input: Buffer, args: string): Promise<Buffer> {
 		return new Promise((resolve, reject) => {
-			const ffmpeg = spawn(this.ffmpegPath, [...args, 'pipe:1']);
+			if (!this.ffmpegPath) {
+				return reject(new Error('FFmpeg path not initialized'));
+			}
+
+			const argsArray = args.trim().split(/\s+/);
+			const finalArgs = argsArray.includes('-i') ? argsArray : ['-i', 'pipe:0', ...argsArray];
+
+			const ffmpeg = spawn(this.ffmpegPath, finalArgs);
 			const chunks: Buffer[] = [];
 
-			ffmpeg.stdout.on('data', (c) => chunks.push(c));
-			ffmpeg.stderr.on('data', (d) => console.error('ffmpeg:', d.toString()));
-			ffmpeg.on('close', (code) =>
-				code === 0 ? resolve(Buffer.concat(chunks as any)) : reject(new Error(`ffmpeg exited ${code}`)),
-			);
+			ffmpeg.stdout.on('data', (chunk: Buffer) => {
+				chunks.push(chunk);
+			});
 
-			ffmpeg.stdin.write(input);
-			ffmpeg.stdin.end();
+			ffmpeg.stderr.on('data', (data: Buffer) => {
+				console.error('ffmpeg stderr:', data.toString());
+			});
+
+			ffmpeg.on('error', (err) => {
+				reject(new Error(`FFmpeg process error: ${err.message}`));
+			});
+
+			ffmpeg.on('close', (code) => {
+				if (code === 0) {
+					resolve(Buffer.concat(chunks as any));
+				} else {
+					reject(new Error(`FFmpeg exited with code ${code}`));
+				}
+			});
+
+			if (ffmpeg.stdin) {
+				ffmpeg.stdin.write(input);
+				ffmpeg.stdin.end();
+			} else {
+				reject(new Error('FFmpeg stdin not available'));
+			}
 		});
 	}
 
 	cut(input: Buffer, start: number, duration: number) {
-		const args = [
-			'-ss',
-			String(start),
-			'-t',
-			String(duration),
-			'-i',
-			'pipe:0',
-			'-c:v',
-			'libx264',
-			'-c:a',
-			'aac',
-			'-f',
-			'mp4',
-		];
+		const args = `-i pipe:0 -ss ${start} -t ${duration} -c:v libx264 -preset ultrafast -crf 23 -c:a aac -avoid_negative_ts make_zero -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
 	resize(input: Buffer, width: number, height: number) {
-		const args = [
-			'-i',
-			'pipe:0',
-			'-vf',
-			`scale=${width}:${height}`,
-			'-c:v',
-			'libx264',
-			'-c:a',
-			'aac',
-			'-f',
-			'mp4',
-		];
+		const args = `-i pipe:0 -vf scale=${width}:${height} -c:v libx264 -c:a aac -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
 	crop(input: Buffer, w: number, h: number, x: number, y: number) {
-		const args = [
-			'-i',
-			'pipe:0',
-			'-vf',
-			`crop=${w}:${h}:${x}:${y}`,
-			'-c:v',
-			'libx264',
-			'-c:a',
-			'aac',
-			'-f',
-			'mp4',
-		];
+		const args = `-i pipe:0 -vf crop=${w}:${h}:${x}:${y} -c:v libx264 -c:a aac -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
 	mute(input: Buffer) {
-		const args = ['-i', 'pipe:0', '-an', '-c:v', 'libx264', '-f', 'mp4'];
+		const args = `-i pipe:0 -an -c:v libx264 -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
-	// async replaceAudio(video: Buffer, audio: Buffer): Promise<Buffer> {
-	// 	return new Promise((resolve, reject) => {
-	// 		const args = [
-	// 			'-i',
-	// 			'pipe:0', // video input
-	// 			'-i',
-	// 			'pipe:3', // audio input (extra pipe)
-	// 			'-c:v',
-	// 			'copy', // giữ nguyên video
-	// 			'-c:a',
-	// 			'aac', // encode audio
-	// 			'-map',
-	// 			'0:v:0', // chọn video từ input 0
-	// 			'-map',
-	// 			'1:a:0', // chọn audio từ input 1
-	// 			'-f',
-	// 			'mp4',
-	// 			'pipe:1',
-	// 		];
+	async replaceAudio(video: Buffer, audio: Buffer): Promise<Buffer> {
+		return new Promise((resolve, reject) => {
+			const args =
+				'-i pipe:0 -i pipe:3 -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -movflags frag_keyframe+empty_moov -f mp4 pipe:1';
 
-	// 		// Khai báo stdio đầy đủ
-	// 		const ffmpeg = spawn(this.ffmpegPath, args, {
-	// 			stdio: ['pipe', 'pipe', 'pipe', 'pipe'], // thêm pipe cho audio
-	// 		});
+			const ffmpeg = spawn(this.ffmpegPath, args.split(' '), {
+				stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
+			});
 
-	// 		const chunks: Buffer[] = [];
+			const chunks: Buffer[] = [];
 
-	// 		ffmpeg.stdout.on('data', (c) => chunks.push(c));
-	// 		ffmpeg.stderr.on('data', (d) => console.error('ffmpeg:', d.toString()));
+			ffmpeg.stdout.on('data', (chunk: Buffer) => {
+				chunks.push(chunk);
+			});
 
-	// 		ffmpeg.on('close', (code) => {
-	// 			if (code === 0) {
-	// 				resolve(Buffer.concat(chunks));
-	// 			} else {
-	// 				reject(new Error(`ffmpeg exited ${code}`));
-	// 			}
-	// 		});
+			ffmpeg.stderr.on('data', (data: Buffer) => {
+				console.error('ffmpeg stderr:', data.toString());
+			});
 
-	// 		// ⏺️ Ghi video vào stdin (pipe:0)
-	// 		ffmpeg.stdin.write(video);
-	// 		ffmpeg.stdin.end();
+			ffmpeg.on('error', (err) => {
+				reject(new Error(`FFmpeg process error: ${err.message}`));
+			});
 
-	// 		// ⏺️ Ghi audio vào pipe:3
-	// 		const audioPipe = ffmpeg.stdio[3] as Writable;
-	// 		if (!audioPipe) {
-	// 			return reject(new Error('Audio pipe not available'));
-	// 		}
-	// 		audioPipe.write(audio);
-	// 		audioPipe.end();
-	// 	});
-	// }
+			ffmpeg.on('close', (code) => {
+				if (code === 0) {
+					resolve(Buffer.concat(chunks as any));
+				} else {
+					reject(new Error(`FFmpeg exited with code ${code}`));
+				}
+			});
+
+			// Ghi video vào stdin (pipe:0)
+			if (ffmpeg.stdin) {
+				ffmpeg.stdin.write(video);
+				ffmpeg.stdin.end();
+			} else {
+				reject(new Error('Video input pipe not available'));
+				return;
+			}
+
+			// Ghi audio vào pipe:3
+			const audioPipe = ffmpeg.stdio[3] as Writable | undefined;
+			if (audioPipe) {
+				audioPipe.write(audio);
+				audioPipe.end();
+			} else {
+				reject(new Error('Audio pipe not available'));
+			}
+		});
+	}
+
 	changeSpeed(input: Buffer, factor: number) {
-		// factor <1 = slow, >1 = fast
-		const args = [
-			'-i',
-			'pipe:0',
-			'-filter:v',
-			`setpts=${1 / factor}*PTS`,
-			'-c:v',
-			'libx264',
-			'-an',
-			'-f',
-			'mp4',
-		];
+		const args = `-i pipe:0 -filter:v setpts=${1 / factor}*PTS -c:v libx264 -an -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
 	addWatermark(input: Buffer, watermarkPath: string, x: number, y: number) {
-		const args = [
-			'-i',
-			'pipe:0',
-			'-i',
-			watermarkPath,
-			'-filter_complex',
-			`overlay=${x}:${y}`,
-			'-c:v',
-			'libx264',
-			'-c:a',
-			'aac',
-			'-f',
-			'mp4',
-		];
+		const args = `-i pipe:0 -i "${watermarkPath}" -filter_complex overlay=${x}:${y} -c:v libx264 -c:a aac -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
 	thumbnail(input: Buffer, at: number = 1) {
-		const args = ['-ss', String(at), '-i', 'pipe:0', '-frames:v', '1', '-f', 'image2', 'pipe:1'];
+		const args = `-i pipe:0 -ss ${at} -frames:v 1 -f image2 pipe:1`;
 		return this._run(input, args);
 	}
 
 	extractAudio(input: Buffer) {
-		const args = ['-i', 'pipe:0', '-vn', '-c:a', 'aac', '-f', 'mp3'];
+		const args = '-i pipe:0 -vn -c:a aac -f mp3 pipe:1';
 		return this._run(input, args);
 	}
 }
