@@ -1,3 +1,4 @@
+// bun test tests/resize.test.ts
 import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import ffmpegHandler from '../nodes/VideoMzz/src/handlers/ffmpegHandler';
@@ -11,6 +12,6 @@ describe('FfmpegHandler.resize', () => {
     expect(result).toBeInstanceOf(Buffer);
     expect(result.length).toBeGreaterThan(1000);
 
-    writeFileSync(path.join(__dirname, 'fixtures', 'resize_output.mp4'), result);
+    writeFileSync(path.join(__dirname, 'output', 'resize_output.mp4'), result);
   }, 10000);
 });

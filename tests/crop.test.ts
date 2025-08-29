@@ -1,3 +1,5 @@
+// bun test tests/crop.test.ts
+
 import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import ffmpegHandler from '../nodes/VideoMzz/src/handlers/ffmpegHandler';
@@ -10,6 +12,6 @@ describe('FfmpegHandler.crop', () => {
     expect(result).toBeInstanceOf(Buffer);
     expect(result.length).toBeGreaterThan(1000);
 
-    writeFileSync(path.join(__dirname, 'fixtures', 'crop_output.mp4'), result);
+    writeFileSync(path.join(__dirname, 'output', 'crop_output.mp4'), result);
   }, 10000);
 });
