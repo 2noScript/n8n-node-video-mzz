@@ -1,9 +1,18 @@
 # n8n-nodes-video-mzz
 
-## Overview
+This node provides simple yet powerful tools for **cutting and editing videos** directly within your workflow.  
+It is optimized for **short-form content** and works best with videos **under 15 minutes**.  
 
-Optimize your workflow in n8n — these nodes handle video processing and operations with seamless drag-and-drop automation.
+Perfect for editing clips from platforms like:  
+- YouTube Shorts  
+- TikTok  
+- Facebook Reels  
+- Instagram Reels  
+- Douyin  
+- and other short-form video formats.  
 
+With multiple cutting options (by range, duration, intervals, or keeping/removing specific segments),  
+you can quickly prepare videos for publishing, sharing, or further processing.  
 
 
 # ✂️ Cut Options  
