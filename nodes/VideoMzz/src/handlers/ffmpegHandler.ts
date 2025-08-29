@@ -71,15 +71,12 @@ class FfmpegHandler {
 		});
 	}
 
-	// Interface cho các tùy chọn cắt video
 
-	// Hàm cut cũ (giữ lại để tương thích ngược)
 	cut(input: Buffer, start: number, duration: number) {
 		const args = `-i pipe:0 -ss ${start} -t ${duration} -c:v libx264 -preset ultrafast -crf 23 -c:a aac -avoid_negative_ts make_zero -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
-	// Hàm cut mới với nhiều chế độ
 	async cutAdvanced(input: Buffer, options: CutOptions): Promise<Buffer | Buffer[]> {
 		switch (options.mode) {
 			case 'range':
