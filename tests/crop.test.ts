@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
-import ffmpegHandler from '../nodes/videomzz/handlers/ffmpegHandler';
+import ffmpegHandler from '../nodes/VideoMzz/src/handlers/ffmpegHandler';
 
 describe('FfmpegHandler.crop', () => {
   const sampleVideo = readFileSync(path.join(__dirname, 'fixtures', 'sample.mp4'));
