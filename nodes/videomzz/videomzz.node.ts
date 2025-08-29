@@ -1,3 +1,4 @@
+/* eslint-disable n8n-nodes-base/node-class-description-missing-subtitle */
 /* eslint-disable n8n-nodes-base/node-class-description-icon-not-svg */
 /* eslint-disable n8n-nodes-base/node-param-display-name-miscased */
 
@@ -8,34 +9,38 @@ import {
 	INodeExecutionData,
 } from 'n8n-workflow';
 import { NodeConnectionType } from 'n8n-workflow';
-export class VideoEditorStatic implements INodeType {
+import { videoFields, videoOperations } from './src/description/videoDescription';
+
+export class VideoMzz implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Video Editor (ffmpeg-static)',
-		name: 'videoEditorStatic',
+		displayName: 'VideoMzz',
+		name: 'videoMzz',
 		icon: 'file:video-ico.png',
-		group: ['transform'],
+		group: ['input'],
 		version: 1,
-		description: 'Edit video files using ffmpeg (static or global)',
+		description: 'Video Editing',
 		defaults: {
 			name: 'Video Editor',
 		},
+		usableAsTool: true,
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
 		properties: [
 			{
-				displayName: 'Start Time (seconds)',
-				name: 'startTime',
-				type: 'number',
-				default: 0,
-				description: 'Start time to cut video',
+				displayName: 'Resource',
+				name: 'resource',
+				type: 'options',
+				noDataExpression: true,
+				options: [
+					{
+						name: 'Video',
+						value: 'video',
+					},
+				],
+				default: 'video',
 			},
-			{
-				displayName: 'Duration (seconds)',
-				name: 'duration',
-				type: 'number',
-				default: 10,
-				description: 'Duration of output video',
-			},
+			...videoOperations,
+			...videoFields,
 		],
 	};
 
