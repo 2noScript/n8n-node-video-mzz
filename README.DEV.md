@@ -2,8 +2,8 @@
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/2noScript/n8n-nodes-multitasking
-   cd n8n-nodes-multitasking
+   git clone https://github.com/2noScript/n8n-nodes-video-mzz
+   cd n8n-nodes-video-mzz
    ```
 
 2. Install dependencies:

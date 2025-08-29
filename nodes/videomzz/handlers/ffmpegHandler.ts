@@ -73,60 +73,58 @@ class FfmpegHandler {
 	}
 
 	mute(input: Buffer) {
-		const args = `-i pipe:0 -an -c:v libx264 -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
+		const args = `-i pipe:0 -an -c:v copy -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
-	async replaceAudio(video: Buffer, audio: Buffer): Promise<Buffer> {
-		return new Promise((resolve, reject) => {
-			const args =
-				'-i pipe:0 -i pipe:3 -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -movflags frag_keyframe+empty_moov -f mp4 pipe:1';
+	// async replaceAudio(video: Buffer, audio: Buffer): Promise<Buffer> {
+	// 	return new Promise((resolve, reject) => {
+	// 		const args =
+	// 			'-i pipe:0 -i pipe:3 -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 -movflags frag_keyframe+empty_moov -f mp4 pipe:1';
 
-			const ffmpeg = spawn(this.ffmpegPath, args.split(' '), {
-				stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
-			});
+	// 		const ffmpeg = spawn(this.ffmpegPath, args.split(' '), {
+	// 			stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
+	// 		});
 
-			const chunks: Buffer[] = [];
+	// 		const chunks: Buffer[] = [];
 
-			ffmpeg.stdout.on('data', (chunk: Buffer) => {
-				chunks.push(chunk);
-			});
+	// 		ffmpeg.stdout.on('data', (chunk: Buffer) => {
+	// 			chunks.push(chunk);
+	// 		});
 
-			ffmpeg.stderr.on('data', (data: Buffer) => {
-				console.error('ffmpeg stderr:', data.toString());
-			});
+	// 		ffmpeg.stderr.on('data', (data: Buffer) => {
+	// 			console.error('ffmpeg stderr:', data.toString());
+	// 		});
 
-			ffmpeg.on('error', (err) => {
-				reject(new Error(`FFmpeg process error: ${err.message}`));
-			});
+	// 		ffmpeg.on('error', (err) => {
+	// 			reject(new Error(`FFmpeg process error: ${err.message}`));
+	// 		});
 
-			ffmpeg.on('close', (code) => {
-				if (code === 0) {
-					resolve(Buffer.concat(chunks as any));
-				} else {
-					reject(new Error(`FFmpeg exited with code ${code}`));
-				}
-			});
+	// 		ffmpeg.on('close', (code) => {
+	// 			if (code === 0) {
+	// 				resolve(Buffer.concat(chunks as any));
+	// 			} else {
+	// 				reject(new Error(`FFmpeg exited with code ${code}`));
+	// 			}
+	// 		});
 
-			// Ghi video vào stdin (pipe:0)
-			if (ffmpeg.stdin) {
-				ffmpeg.stdin.write(video);
-				ffmpeg.stdin.end();
-			} else {
-				reject(new Error('Video input pipe not available'));
-				return;
-			}
+	// 		if (ffmpeg.stdin) {
+	// 			ffmpeg.stdin.write(video);
+	// 			ffmpeg.stdin.end();
+	// 		} else {
+	// 			reject(new Error('Video input pipe not available'));
+	// 			return;
+	// 		}
 
-			// Ghi audio vào pipe:3
-			const audioPipe = ffmpeg.stdio[3] as Writable | undefined;
-			if (audioPipe) {
-				audioPipe.write(audio);
-				audioPipe.end();
-			} else {
-				reject(new Error('Audio pipe not available'));
-			}
-		});
-	}
+	// 		const audioPipe = ffmpeg.stdio[3] as Writable | undefined;
+	// 		if (audioPipe) {
+	// 			audioPipe.write(audio);
+	// 			audioPipe.end();
+	// 		} else {
+	// 			reject(new Error('Audio pipe not available'));
+	// 		}
+	// 	});
+	// }
 
 	changeSpeed(input: Buffer, factor: number) {
 		const args = `-i pipe:0 -filter:v setpts=${1 / factor}*PTS -c:v libx264 -an -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;

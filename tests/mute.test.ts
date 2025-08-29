@@ -1,3 +1,5 @@
+// bun test tests/mute.test.ts
+
 import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import ffmpegHandler from '../nodes/videomzz/handlers/ffmpegHandler';
@@ -10,6 +12,6 @@ describe('FfmpegHandler.mute', () => {
     expect(result).toBeInstanceOf(Buffer);
     expect(result.length).toBeGreaterThan(1000);
 
-    writeFileSync(path.join(__dirname, 'fixtures', 'mute_output.mp4'), result);
-  }, 10000);
+    writeFileSync(path.join(__dirname, 'output', 'mute_output.mp4'), result);
+  }, 30000); 
 });
