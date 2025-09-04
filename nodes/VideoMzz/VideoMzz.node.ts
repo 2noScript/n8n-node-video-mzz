@@ -10,6 +10,7 @@ import {
 } from 'n8n-workflow';
 import { NodeConnectionType } from 'n8n-workflow';
 import { videoFields, videoOperations } from './src/description/videoDescription';
+import videoHandler from './src/handlers/videoHandler';
 
 export class VideoMzz implements INodeType {
 	description: INodeTypeDescription = {
@@ -45,9 +46,21 @@ export class VideoMzz implements INodeType {
 	};
 
 	async execute(this: IExecuteFunctions) {
-		const items = this.getInputData();
-
 		const returnData: INodeExecutionData[] = [];
+
+		try {
+			const result = await videoHandler.runTask(this);
+			returnData.push(result);
+		} catch (error) {
+			if (this.continueOnFail()) {
+				const executionErrorData = this.helpers.constructExecutionMetaData(
+					this.helpers.returnJsonArray({ error: error.message }),
+					{ itemData: { item: 0 } },
+				);
+				returnData.push(...executionErrorData);
+			}
+			throw error;
+		}
 
 		return [returnData];
 	}

@@ -1,6 +1,6 @@
 import { spawn, execSync } from 'child_process';
-import { Writable } from 'stream';
 import ffmpegStatic from 'ffmpeg-static';
+import fs from 'fs';
 interface CutOptions {
 	mode: 'range' | 'duration' | 'keep' | 'remove' | 'interval' | 'count';
 	// Cho mode 'range'
@@ -26,7 +26,19 @@ class FfmpegHandler {
 			console.log('Using system FFmpeg');
 		} catch {
 			this.ffmpegPath = ffmpegStatic!;
-			console.log('Using bundled FFmpeg');
+		}
+
+		if (process.platform !== 'win32') {
+			try {
+				fs.accessSync(this.ffmpegPath, fs.constants.X_OK);
+			} catch {
+				try {
+					fs.chmodSync(this.ffmpegPath, 0o755);
+					console.log('FFmpeg permission set to executable.');
+				} catch (err) {
+					console.error('Cannot set executable permission for ffmpeg:', err);
+				}
+			}
 		}
 	}
 
@@ -70,7 +82,6 @@ class FfmpegHandler {
 			}
 		});
 	}
-
 
 	cut(input: Buffer, start: number, duration: number) {
 		const args = `-i pipe:0 -ss ${start} -t ${duration} -c:v libx264 -preset ultrafast -crf 23 -c:a aac -avoid_negative_ts make_zero -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;

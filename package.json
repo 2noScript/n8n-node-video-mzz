@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-video-mzz",
-	"version": "0.1.0",
+	"version": "0.0.1",
 	"description": "n8n nodes for video mzz",
 	"keywords": [
 		"n8n-community-node-package"
@@ -9,7 +9,7 @@
 	"homepage": "",
 	"author": {
 		"name": "",
-		"email": ""
+		"email": "dev.2noscript@gmail.com"
 	},
 	"repository": {
 		"type": "git",
@@ -39,7 +39,6 @@
 	},
 	"devDependencies": {
 		"@types/jest": "^30.0.0",
-		"@types/tmp": "^0.2.6",
 		"@typescript-eslint/parser": "~8.32.0",
 		"eslint": "^8.57.0",
 		"eslint-plugin-n8n-nodes-base": "^1.16.3",
@@ -51,7 +50,6 @@
 	},
 	"peerDependencies": {},
 	"dependencies": {
-		"ffmpeg-static": "^5.2.0",
-		"tmp": "^0.2.5"
+		"ffmpeg-static": "^5.2.0"
 	}
 }

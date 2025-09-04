@@ -50,6 +50,12 @@ const videoCutFields: INodeProperties[] = [
 		],
 		default: 'range',
 		description: 'Choose how you want to cut the video',
+		displayOptions: {
+			show: {
+				resource: ['video'],
+				operation:['cut'],
+			},
+		},
 		
 	},
 
@@ -104,4 +110,20 @@ const videoCutFields: INodeProperties[] = [
 	// },
 ];
 
-export const videoFields: INodeProperties[] = [...videoCutFields];
+const videoUtilsFields: INodeProperties[] = [
+	{
+		displayName: 'Video data',
+		name: 'binaryProperty',
+		type: 'string',
+		required: true,
+		hint: 'The name of the input binary field containing the file to be uploaded',
+		displayOptions: {
+			show: {
+				resource: ['video'],
+			},
+		},
+		default: 'data',
+	},
+];
+
+export const videoFields: INodeProperties[] = [...videoCutFields, ...videoUtilsFields];
