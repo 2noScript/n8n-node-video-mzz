@@ -114,14 +114,14 @@ class FfmpegHandler {
 	}
 
 	//  (start - end)
-	private cutByRange(input: Buffer, start: number, end: number): Promise<Buffer> {
+	cutByRange(input: Buffer, start: number, end: number): Promise<Buffer> {
 		const duration = end - start;
 		const args = `-i pipe:0 -ss ${start} -t ${duration} -c:v libx264 -preset ultrafast -crf 23 -c:a aac -avoid_negative_ts make_zero -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}
 
 	// (start + duration)
-	private cutByDuration(input: Buffer, start: number, duration: number): Promise<Buffer> {
+	cutByDuration(input: Buffer, start: number, duration: number): Promise<Buffer> {
 		const args = `-i pipe:0 -ss ${start} -t ${duration} -c:v libx264 -preset ultrafast -crf 23 -c:a aac -avoid_negative_ts make_zero -movflags frag_keyframe+empty_moov -f mp4 pipe:1`;
 		return this._run(input, args);
 	}

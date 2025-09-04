@@ -38,30 +38,28 @@ export const videoOperations: INodeProperties[] = [
 const videoCutFields: INodeProperties[] = [
 	{
 		displayName: 'Cut Mode',
-		name: 'mode',
+		name: 'cutMode',
 		type: 'options',
 		options: [
-			{ name: 'By Range (Start–End)', value: 'range' },
+			{ name: 'By Range (Start–End)', value: 'cutRange' },
 			{ name: 'By Duration', value: 'duration' },
 			{ name: 'Keep Segments (Multiple)', value: 'keep' },
 			{ name: 'Remove Segments (Return Leftovers)', value: 'remove' },
 			{ name: 'Split by Interval', value: 'interval' },
 			{ name: 'Split by Count', value: 'count' },
 		],
-		default: 'range',
+		default: 'cutRange',
 		description: 'Choose how you want to cut the video',
 		displayOptions: {
 			show: {
 				resource: ['video'],
-				operation:['cut'],
+				operation: ['cut'],
 			},
 		},
-		
 	},
-
 	{
-		displayName: 'Ranges (JSON)',
-		name: 'range',
+		displayName: 'Cut Range (JSON)',
+		name: 'cutRange',
 		type: 'json',
 		default: '{"start": "00:00:05", "end": "00:00:15"}',
 		placeholder: '{"start":"00:00:05","end":"00:00:15"}',
@@ -69,45 +67,11 @@ const videoCutFields: INodeProperties[] = [
 			'List of time ranges in JSON format. Example: {"start":"00:00:05","end":"00:00:15"}.',
 		displayOptions: {
 			show: {
-				mode: ['range'],
+				resource: ['video'],
+				cutMode: ['cutRange'],
 			},
 		},
-	},
-
-	// {
-	// 	displayName: 'Segments to Keep',
-	// 	name: 'segments',
-	// 	type: 'fixedCollection',
-	// 	placeholder: 'Add Segment',
-	// 	typeOptions: {
-	// 		multipleValues: true,
-	// 	},
-	// 	default: [],
-	// 	options: [
-	// 		{
-	// 			name: 'segment',
-	// 			displayName: 'Segment',
-	// 			values: [
-	// 				{
-	// 					displayName: 'Start Time',
-	// 					name: 'start',
-	// 					type: 'string',
-	// 					default: '',
-	// 					placeholder: '00:00:05',
-	// 					description: 'Start time of the segment (HH:MM:SS or seconds)',
-	// 				},
-	// 				{
-	// 					displayName: 'End Time',
-	// 					name: 'end',
-	// 					type: 'string',
-	// 					placeholder: '00:00:10',
-	// 					description: 'End time of the segment (HH:MM:SS or seconds)',
-	// 					default: '',
-	// 				},
-	// 			],
-	// 		},
-	// 	],
-	// },
+	}
 ];
 
 const videoUtilsFields: INodeProperties[] = [
