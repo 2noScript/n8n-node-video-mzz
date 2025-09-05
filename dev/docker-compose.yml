@@ -13,6 +13,7 @@ services:
       - N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom
       - N8N_LOG_LEVEL=debug
       - N8N_RUNNERS_ENABLED=true
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem # or 'database'
 
     volumes:  
       - ./n8n_data:/home/node/.n8n
